@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "public": true,
+  "regions": ["gru"], // Brasil para baja latencia en LATAM
+  "builds": [
+    {
+      "src": "/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/neuro-model.json",
+      "headers": { 
+        "Cache-Control": "public, max-age=604800, immutable",
+        "Content-Encoding": "gzip"
+      }
+    },
+    {
+      "src": "/(.*.glb|.*.gltf)",
+      "headers": {
+        "Content-Type": "model/gltf-binary"
+      }
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html",
+      "headers": { 
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp"
+      }
+    }
+  ],
+  "env": {
+    "TFJS_BACKEND": "webgl",
+    "WEBGL_VERSION": "2",
+    "THREEJS_OPTIMIZE": "high-performance"
+  }
+}
