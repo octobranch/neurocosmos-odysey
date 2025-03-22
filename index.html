@@ -3,323 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>NeuroCosmos Odyssey | M1 Experience</title>
+    <title>NeuroPad Odyssey</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
-        :root {
-            --neural-purple: #7A00FF;
-            --cyber-cyan: #00F7FF;
-            --hologram-effect: linear-gradient(45deg, 
-                rgba(122,0,255,0.2), 
-                rgba(0,247,255,0.2));
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
         }
 
         body {
-            margin: 0;
             background: #000;
-            color: white;
+            color: #fff;
             font-family: -apple-system, system-ui;
-            touch-action: manipulation;
             overflow: hidden;
         }
 
-        .neuro-interface {
+        #neuroCanvas {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 1000;
+            outline: none;
         }
 
-        .radial-menu {
+        .cyber-hud {
+            position: fixed;
+            padding: 1rem;
+            background: rgba(0,0,0,0.8);
+            border: 2px solid #7A00FF;
+            border-radius: 12px;
+            font-family: 'SF Mono', monospace;
+        }
+
+        #stats {
+            top: 20px;
+            left: 20px;
+        }
+
+        #sensorData {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .neuro-menu {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            width: 300px;
-            height: 300px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 1rem;
         }
 
-        .neuro-button {
-            background: rgba(255,255,255,0.05);
-            border: 2px solid var(--neural-purple);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
+        .neuro-btn {
+            padding: 1rem;
+            background: rgba(122,0,255,0.3);
+            border: 2px solid #00F7FF;
+            border-radius: 8px;
             cursor: pointer;
-            pointer-events: all;
+            transition: all 0.3s ease;
         }
 
-        .neuro-button:hover {
-            transform: scale(1.2);
-            background: var(--hologram-effect);
+        .neuro-btn:active {
+            transform: scale(0.9);
+            background: rgba(0,247,255,0.3);
         }
 
-        .mind-visualizer {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            width: 200px;
-            height: 200px;
-            border: 2px solid var(--cyber-cyan);
-            border-radius: 50%;
+        @keyframes hologram {
+            0% { filter: drop-shadow(0 0 10px #7A00FF); }
+            50% { filter: drop-shadow(0 0 20px #00F7FF); }
+            100% { filter: drop-shadow(0 0 10px #7A00FF); }
         }
     </style>
 </head>
 <body>
-    <canvas class="neuro-interface" id="mainCanvas"></canvas>
-    
-    <div class="radial-menu">
-        <div class="neuro-button" data-game="zen">🧘 Zen</div>
-        <div class="neuro-button" data-game="quantum">🌀 Quantum</div>
-        <div class="neuro-button" data-game="data">🌐 Datos</div>
-        <div class="neuro-button" data-game="neuro">🧠 Neuro</div>
-        <div class="neuro-button" data-game="social">🤝 Social</div>
-        <div class="neuro-button" data-game="stats">📊 Stats</div>
+    <canvas id="neuroCanvas"></canvas>
+    <div class="cyber-hud" id="stats">Cargando...</div>
+    <div class="cyber-hud" id="sensorData"></div>
+    <div class="neuro-menu">
+        <div class="neuro-btn" id="mode1">🌀 Quantum</div>
+        <div class="neuro-btn" id="mode2">🧠 Neuro</div>
+        <div class="neuro-btn" id="mode3">⚡ 120Hz</div>
     </div>
 
-    <div class="mind-visualizer" id="mindMap"></div>
+<script>
+// Sistema Core M1
+class NeuroEngine {
+    constructor() {
+        this.initThreeJS();
+        this.initSensors();
+        this.initAI();
+        this.setupUI();
+        this.animate();
+    }
 
-    <script>
-        class NeuroCosmos {
-            constructor() {
-                this.initWorld();
-                this.initGames();
-                this.initNeuro();
-                this.startBioFeedback();
-            }
+    initThreeJS() {
+        this.renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('neuroCanvas'),
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        this.camera.position.z = 5;
 
-            initWorld() {
-                // Sistema 3D optimizado para Metal
-                this.renderer = new THREE.WebGLRenderer({
-                    canvas: document.getElementById('mainCanvas'),
-                    antialias: true,
-                    powerPreference: "high-performance"
-                });
-                this.scene = new THREE.Scene();
-                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        // Geometría optimizada para Metal
+        this.geometry = new THREE.IcosahedronGeometry(2, 5);
+        this.material = new THREE.MeshStandardMaterial({
+            metalness: 0.95,
+            roughness: 0.05,
+            color: 0x7A00FF
+        });
+        
+        this.cube = new THREE.Mesh(this.geometry, this.material);
+        this.scene.add(this.cube);
+        
+        // Iluminación HDR
+        const light = new THREE.PointLight(0xFFFFFF, 1000);
+        light.position.set(10, 10, 10);
+        this.scene.add(light);
+    }
+
+    initSensors() {
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', (e) => {
+                document.getElementById('sensorData').innerHTML = `
+                    α: ${e.alpha.toFixed(1)}°<br>
+                    β: ${e.beta.toFixed(1)}°<br>
+                    γ: ${e.gamma.toFixed(1)}°
+                `;
                 
-                // Geometría dinámica basada en uso de memoria
-                this.createDynamicGeometry();
-                
-                // Sistema de partículas interactivas
-                this.initParticles();
-            }
-
-            createDynamicGeometry() {
-                const memory = performance.memory;
-                const detail = Math.min(10, Math.floor(memory.jsHeapSizeLimit / 100000000));
-                this.worldGeometry = new THREE.IcosahedronGeometry(10, detail);
-                this.worldMaterial = new THREE.MeshStandardMaterial({
-                    metalness: 0.9,
-                    roughness: 0.1,
-                    color: 0x7A00FF
-                });
-                this.worldMesh = new THREE.Mesh(this.worldGeometry, this.worldMaterial);
-                this.scene.add(this.worldMesh);
-            }
-
-            initParticles() {
-                const particles = new THREE.BufferGeometry();
-                const positions = new Float32Array(100000 * 3);
-                for(let i = 0; i < 100000; i++) {
-                    positions[i * 3] = (Math.random() - 0.5) * 100;
-                    positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
-                    positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
-                }
-                particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                this.particleSystem = new THREE.Points(
-                    particles,
-                    new THREE.PointsMaterial({ size: 0.1, color: 0x00F7FF })
-                );
-                this.scene.add(this.particleSystem);
-            }
-
-            initGames() {
-                // Sistema de juegos con datos en tiempo real
-                document.querySelectorAll('.neuro-button').forEach(btn => {
-                    btn.addEventListener('touchstart', (e) => {
-                        this.launchGame(btn.dataset.game);
-                        btn.style.transform = 'scale(0.9)';
-                    });
-                    
-                    btn.addEventListener('touchend', () => {
-                        btn.style.transform = '';
-                    });
-                });
-            }
-
-            launchGame(gameType) {
-                switch(gameType) {
-                    case 'zen':
-                        new ZenGame(this.scene);
-                        break;
-                    case 'quantum':
-                        new QuantumPuzzle();
-                        break;
-                    case 'data':
-                        this.loadRealTimeData();
-                        break;
-                    case 'neuro':
-                        this.startNeuroAnalysis();
-                        break;
-                }
-            }
-
-            initNeuro() {
-                // Modelo de IA para análisis de interacción
-                this.neuralNet = tf.sequential({
-                    layers: [
-                        tf.layers.dense({ units: 16, activation: 'relu', inputShape: [5] }),
-                        tf.layers.dense({ units: 8, activation: 'relu' }),
-                        tf.layers.dense({ units: 4, activation: 'softmax' })
-                    ]
-                });
-                this.neuralNet.compile({ optimizer: 'adam', loss: 'categoricalCrossentropy' });
-            }
-
-            startBioFeedback() {
-                // Análisis de patrones táctiles
-                let touchData = [];
-                document.addEventListener('touchmove', (e) => {
-                    const touch = e.touches[0];
-                    touchData.push({
-                        x: touch.clientX,
-                        y: touch.clientY,
-                        pressure: touch.force,
-                        timestamp: Date.now()
-                    });
-                    
-                    if(touchData.length > 100) {
-                        this.analyzeInteractionPattern(touchData);
-                        touchData = [];
-                    }
-                });
-            }
-
-            analyzeInteractionPattern(data) {
-                const inputs = tf.tensor([[
-                    data.length,
-                    this.calculateVelocity(data),
-                    this.calculatePressureVariance(data),
-                    this.calculateEntropy(data),
-                    Date.now() - data[0].timestamp
-                ]]);
-                
-                const prediction = this.neuralNet.predict(inputs);
-                prediction.data().then(result => {
-                    this.adjustEnvironment(result);
-                });
-            }
-
-            adjustEnvironment(neuroData) {
-                // Ajusta el mundo 3D basado en análisis neuronal
-                gsap.to(this.worldMaterial, {
-                    metalness: neuroData[0] * 0.9,
-                    roughness: neuroData[1] * 0.5,
-                    duration: 2
-                });
-            }
-
-            loadRealTimeData() {
-                // Integración con APIs públicas
-                fetch('https://api.openweathermap.org/data/2.5/weather?q=London&appid=TU_API_KEY')
-                .then(response => response.json())
-                .then(data => {
-                    this.createWeatherEffects(data.weather[0].main);
-                });
-            }
-
-            createWeatherEffects(weather) {
-                // Efectos 3D basados en clima real
-                switch(weather.toLowerCase()) {
-                    case 'rain':
-                        this.createRainEffect();
-                        break;
-                    case 'clouds':
-                        this.createCloudEffect();
-                        break;
-                }
-            }
+                // Rotación 3D con giroscopio
+                this.cube.rotation.x = e.beta * (Math.PI/180);
+                this.cube.rotation.y = e.gamma * (Math.PI/180);
+            });
         }
+    }
 
-        class ZenGame {
-            constructor(scene) {
-                this.scene = scene;
-                this.initZenGarden();
-            }
+    initAI() {
+        // Red neuronal para análisis de interacción
+        this.model = tf.sequential({
+            layers: [
+                tf.layers.dense({ units: 8, activation: 'relu', inputShape: [3] }),
+                tf.layers.dense({ units: 4, activation: 'softmax' })
+            ]
+        });
+        this.model.compile({ optimizer: 'adam', loss: 'meanSquaredError' });
+    }
 
-            initZenGarden() {
-                // Jardín zen generativo
-                this.sandTexture = new THREE.TextureLoader().load('https://example.com/sand.jpg');
-                this.rockGeometry = new THREE.DodecahedronGeometry(2, 1);
-                
-                for(let i = 0; i < 20; i++) {
-                    const rock = new THREE.Mesh(
-                        this.rockGeometry,
-                        new THREE.MeshStandardMaterial({ color: 0x888888 })
-                    );
-                    rock.position.set(
-                        Math.random() * 40 - 20,
-                        0,
-                        Math.random() * 40 - 20
-                    );
-                    this.scene.add(rock);
-                }
-            }
-        }
-
-        class QuantumPuzzle {
-            constructor() {
-                this.initPuzzle();
-            }
-
-            async initPuzzle() {
-                // Rompecabezas cuántico con IA
-                this.model = await tf.loadLayersModel('https://tfhub.dev/google/tfjs-model/quantum-puzzle/v1');
-                this.generateNewPuzzle();
-            }
-
-            generateNewPuzzle() {
-                const puzzleData = tf.randomNormal([1, 256]);
-                const solution = this.model.predict(puzzleData);
-                this.displayPuzzle(solution);
-            }
-
-            displayPuzzle(data) {
-                // Visualización 3D interactiva del puzzle
-                const canvas = document.createElement('canvas');
-                canvas.width = 512;
-                canvas.height = 512;
-                
-                tf.browser.toPixels(data, canvas).then(() => {
-                    document.body.style.backgroundImage = `url(${canvas.toDataURL()})`;
-                });
-            }
-        }
-
-        // Inicialización
-        window.onload = () => {
-            const cosmos = new NeuroCosmos();
+    setupUI() {
+        let lastTap = 0;
+        document.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
             
-            // Animación continua
-            const animate = () => {
-                requestAnimationFrame(animate);
-                cosmos.worldMesh.rotation.x += 0.01;
-                cosmos.worldMesh.rotation.y += 0.01;
-                cosmos.renderer.render(cosmos.scene, cosmos.camera);
-            };
-            animate();
+            if (tapLength < 500 && tapLength > 0) {
+                this.onDoubleTap(e);
+                lastTap = 0;
+            } else {
+                lastTap = currentTime;
+            }
+        });
+
+        document.getElementById('mode1').addEventListener('touchstart', () => {
+            this.activateQuantumMode();
+        });
+    }
+
+    activateQuantumMode() {
+        // Efectos visuales avanzados
+        this.material.color.setHSL(Math.random(), 0.8, 0.5);
+        this.renderer.shadowMap.needsUpdate = true;
+    }
+
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        this.cube.rotation.x += 0.01;
+        this.cube.rotation.y += 0.01;
+        this.renderer.render(this.scene, this.camera);
+        
+        // Actualizar estadísticas
+        document.getElementById('stats').innerHTML = `
+            FPS: ${Math.round(THREE.Clock.DEFAULT.getDelta() * 60)}<br>
+            Memoria: ${(performance.memory.usedJSHeapSize / 1e6).toFixed(1)}MB
+        `;
+    }
+}
+
+// Inicialización
+window.onload = () => {
+    if (WebGLRenderingContext) {
+        const engine = new NeuroEngine();
+        
+        // Optimización para ProMotion
+        const animate120Hz = () => {
+            requestAnimationFrame(animate120Hz);
+            if (window.matchMedia('(min-refresh-rate: 120)').matches) {
+                engine.renderer.render(engine.scene, engine.camera);
+            }
         };
-    </script>
+        animate120Hz();
+    } else {
+        alert('Se requiere WebGL 2.0');
+    }
+};
+</script>
 </body>
 </html>
