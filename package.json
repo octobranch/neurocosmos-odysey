@@ -1,0 +1,23 @@
+{
+  "name": "neurocosmos-odyssey",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build --mode production",
+    "preview": "vite preview",
+    "optimize-glb": "gltf-pipeline -i public/models/*.glb -o public/optimized/",
+    "compress-textures": "sharp resize 2048x2048 public/textures/*.{jpg,png} --format=webp"
+  },
+  "dependencies": {
+    "three": "^0.158.0",
+    "@tensorflow/tfjs": "^4.11.0",
+    "gsap": "^3.12.2",
+    "vite-plugin-glsl": "^1.1.2",
+    "vite-plugin-compression": "^0.5.1"
+  },
+  "devDependencies": {
+    "vite": "^4.4.9",
+    "gltf-pipeline": "^3.0.6",
+    "sharp": "^0.32.6"
+  }
+}
